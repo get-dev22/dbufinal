@@ -117,6 +117,11 @@ export function Complaints() {
 
 	const handleSendResponse = (complaintId) => {
 		if (!responseMessage.trim()) return;
+		
+		if (!complaintId || complaintId === 'undefined') {
+			toast.error("Invalid complaint ID");
+			return;
+		}
 
 		const sendResponse = async () => {
 			try {
@@ -159,6 +164,11 @@ export function Complaints() {
 	const resolveComplaint = (complaintId) => {
 		if (!user?.isAdmin && user?.role !== "admin") {
 			toast.error("Only admins can resolve complaints");
+			return;
+		}
+		
+		if (!complaintId || complaintId === 'undefined') {
+			toast.error("Invalid complaint ID");
 			return;
 		}
 
@@ -252,7 +262,7 @@ export function Complaints() {
 					<div className="flex space-x-4">
 						{user?.isAdmin && (
 							<motion.button
-								whileHover={{ scale: 1.02 }}
+											onClick={() => handleSendResponse(complaint._id || complaint.id)}
 								whileTap={{ scale: 0.98 }}
 								onClick={() => setShowDocumentUpload(true)}
 								className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors">
@@ -411,28 +421,28 @@ export function Complaints() {
 													onClick={() => handleSendResponse(complaint.id)}
 													className="bg-blue-600 text-white px-4 py-2 rounded">
 													<Send className="w-4 h-4" />
-												</button>
+										onClick={() => resolveComplaint(complaint._id || complaint.id)}
 											</div>
 										)}
 									</div>
-								)}
+											selectedComplaint === (complaint._id || complaint.id)
 							</div>
-						))}
+												: (complaint._id || complaint.id)
 					</div>
 				)}
-
+									{selectedComplaint === (complaint._id || complaint.id) ? "Hide" : "Details"}
 				{/* New Complaint Modal */}
 				{showNewComplaint && (
 					<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
 						<motion.div
-							initial={{ opacity: 0, scale: 0.95 }}
+						{selectedComplaint === (complaint._id || complaint.id) && (
 							animate={{ opacity: 1, scale: 1 }}
 							className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
 							<div className="p-6">
 								<div className="flex items-center justify-between mb-6">
 									<h2 className="text-xl font-bold text-gray-900">
 										Submit New Complaint
-									</h2>
+										<div key={r._id || r.id} className="bg-gray-50 rounded p-3 mb-2">
 									<button
 										onClick={() => setShowNewComplaint(false)}
 										className="text-gray-400 hover:text-gray-600">

@@ -121,7 +121,7 @@ class ApiService {
 		const queryString = new URLSearchParams(params).toString();
 		const endpoint = queryString ? `/complaints?${queryString}` : "/complaints";
 		const response = await this.request(endpoint);
-		return response.complaints || response.data || response || [];
+		return Array.isArray(response) ? response : (response.complaints || response.data || []);
 	}
 
 	async getComplaintById(complaintId) {
@@ -165,7 +165,7 @@ class ApiService {
 		const queryString = new URLSearchParams(params).toString();
 		const endpoint = queryString ? `/clubs?${queryString}` : "/clubs";
 		const response = await this.request(endpoint);
-		return response.clubs || response.data || response || [];
+		return Array.isArray(response) ? response : (response.clubs || response.data || []);
 	}
 
 	async getClubById(clubId) {
@@ -230,7 +230,7 @@ class ApiService {
 		const queryString = new URLSearchParams(params).toString();
 		const endpoint = queryString ? `/posts?${queryString}` : "/posts";
 		const response = await this.request(endpoint);
-		return response.posts || response.data || response || [];
+		return Array.isArray(response) ? response : (response.posts || response.data || []);
 	}
 
 	async getPostById(postId) {
@@ -285,7 +285,7 @@ class ApiService {
 		const queryString = new URLSearchParams(params).toString();
 		const endpoint = queryString ? `/elections?${queryString}` : "/elections";
 		const response = await this.request(endpoint);
-		return response.elections || response.data || response || [];
+		return Array.isArray(response) ? response : (response.elections || response.data || []);
 	}
 
 	async getElectionById(electionId) {

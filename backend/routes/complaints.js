@@ -154,6 +154,13 @@ router.patch('/:id/status', protect, adminOnly, async (req, res) => {
       });
     }
 
+    if (!req.params.id || req.params.id === 'undefined') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid complaint ID'
+      });
+    }
+
     const complaint = await Complaint.findById(req.params.id);
     if (!complaint) {
       return res.status(404).json({
@@ -171,14 +178,14 @@ router.patch('/:id/status', protect, adminOnly, async (req, res) => {
     await complaint.populate('submittedBy', 'name email');
     await complaint.populate('assignedTo', 'name email role');
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Complaint status updated successfully',
       complaint
     });
   } catch (error) {
     console.error('Update complaint status error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error updating complaint status'
     });
@@ -196,6 +203,13 @@ router.post('/:id/responses', protect, adminOnly, async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Response message is required'
+      });
+    }
+
+    if (!req.params.id || req.params.id === 'undefined') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid complaint ID'
       });
     }
 
@@ -225,14 +239,14 @@ router.post('/:id/responses', protect, adminOnly, async (req, res) => {
     await complaint.save();
     await complaint.populate('responses.authorId', 'name role');
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Response added successfully',
       response: complaint.responses[complaint.responses.length - 1]
     });
   } catch (error) {
     console.error('Add response error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error adding response'
     });

@@ -64,7 +64,7 @@ router.get('/', optionalAuth, async (req, res) => {
       }
     }
 
-    res.json({
+    return res.json({
       success: true,
       count: elections.length,
       total,
@@ -75,7 +75,7 @@ router.get('/', optionalAuth, async (req, res) => {
     });
   } catch (error) {
     console.error('Get elections error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error fetching elections'
     });

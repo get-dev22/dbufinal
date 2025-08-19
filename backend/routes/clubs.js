@@ -64,7 +64,7 @@ router.get('/', optionalAuth, async (req, res) => {
       socialMedia: club.socialMedia
     }));
 
-    res.json({
+    return res.json({
       success: true,
       count: transformedClubs.length,
       total,
@@ -75,7 +75,7 @@ router.get('/', optionalAuth, async (req, res) => {
     });
   } catch (error) {
     console.error('Get clubs error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error fetching clubs'
     });

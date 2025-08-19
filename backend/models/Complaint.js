@@ -136,7 +136,7 @@ complaintSchema.index({ createdAt: -1 });
 // Generate case ID before saving
 complaintSchema.pre("save", function (next) {
 	if (!this.caseId) {
-		this.caseId = "CASE-" + Date.now().toString().slice(-6);
+		this.caseId = generateCaseId();
 	}
 	next();
 });

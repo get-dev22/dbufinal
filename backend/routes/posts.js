@@ -47,7 +47,7 @@ router.get('/', optionalAuth, async (req, res) => {
 
     const total = await Post.countDocuments(query);
 
-    res.json({
+    return res.json({
       success: true,
       count: posts.length,
       total,
@@ -58,7 +58,7 @@ router.get('/', optionalAuth, async (req, res) => {
     });
   } catch (error) {
     console.error('Get posts error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error fetching posts'
     });
