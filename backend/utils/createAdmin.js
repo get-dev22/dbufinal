@@ -1,19 +1,18 @@
+/** @format */
+
 const User = require("../models/User");
 
 const createDefaultAdmin = async () => {
 	try {
 		// Check if any admin already exists
 		const adminExists = await User.findOne({
-			$or: [
-				{ username: "admindbu12" },
-				{ email: "admin@dbu.edu.et" }
-			]
+			$or: [{ username: "admindbu12" }, { email: "admin@dbu.edu.et" }],
 		});
 
 		if (!adminExists) {
 			const admin = await User.create({
 				name: "System Administrator",
-				username: "admindbu12",
+				username: "dbu10101030",
 				email: "admin@dbu.edu.et",
 				password: "Admin123#",
 				role: "admin",
@@ -31,7 +30,7 @@ const createDefaultAdmin = async () => {
 		const additionalAdmins = [
 			{
 				name: "President Admin",
-				username: "presidentdbu",
+				username: "dbu10101020",
 				email: "president@dbu.edu.et",
 				password: "Admin123#",
 				role: "admin",
@@ -41,7 +40,7 @@ const createDefaultAdmin = async () => {
 			},
 			{
 				name: "Academic Affairs Admin",
-				username: "academicdbu",
+				username: "dbu10101010",
 				email: "academic@dbu.edu.et",
 				password: "Admin123#",
 				role: "admin",
@@ -51,25 +50,26 @@ const createDefaultAdmin = async () => {
 			},
 			{
 				name: "Clubs Admin",
-				username: "clubsdbu",
+				username: "dbu10101040",
 				email: "clubs@dbu.edu.et",
 				password: "Admin123#",
 				role: "admin",
 				isAdmin: true,
 				department: "Student Activities",
 				year: "1st Year",
-			}
+			},
 		];
 
 		for (const adminData of additionalAdmins) {
 			const existingAdmin = await User.findOne({
 				$or: [
-					{ username: adminData.username },
-					{ email: adminData.email }
-				]
+					{ username: adminData.username.toLowerCase() },
+					{ email: adminData.email },
+				],
 			});
-			
+
 			if (!existingAdmin) {
+				adminData.username = adminData.username.toLowerCase();
 				const admin = await User.create(adminData);
 				console.log(`✅ Admin created: ${adminData.username}`);
 			} else {
@@ -77,7 +77,7 @@ const createDefaultAdmin = async () => {
 			}
 		}
 
-		// Create sample students for testing (only if they don't exist)
+		// Create sample students for testing
 		const sampleStudents = [
 			{
 				name: "John Doe",
@@ -104,12 +104,13 @@ const createDefaultAdmin = async () => {
 		for (const studentData of sampleStudents) {
 			const existingStudent = await User.findOne({
 				$or: [
-					{ username: studentData.username },
-					{ email: studentData.email }
-				]
+					{ username: studentData.username.toLowerCase() },
+					{ email: studentData.email },
+				],
 			});
-			
+
 			if (!existingStudent) {
+				studentData.username = studentData.username.toLowerCase();
 				const student = await User.create(studentData);
 				console.log(`✅ Sample student created: ${studentData.username}`);
 			} else {

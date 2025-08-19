@@ -34,7 +34,7 @@ export function Header() {
 	return (
 		<header className="bg-white shadow-sm border-b border-gray-200">
 			{/* Top Info Bar */}
-			<div className="bg-blue text-white py-2 text-sm">
+			<div className="bg-blue  hidden sm:flex text-white py-2 text-sm">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="flex justify-between items-center">
 						<div className="flex space-x-6">
@@ -69,11 +69,11 @@ export function Header() {
 
 			{/* Logo */}
 			<div>
-				<div className="w-full">
+				<div className="w-full h-auto">
 					<img
 						src="/images/logo.png" // Replace with your image URL
 						alt="Logo"
-						className="w-full h-[150px] object-cover"
+						className="w-full h-auto object-cover"
 					/>
 				</div>
 				<hr />
