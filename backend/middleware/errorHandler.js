@@ -2,8 +2,13 @@ const errorHandler = (err, req, res, next) => {
   let error = { ...err };
   error.message = err.message;
 
-  // Log error
-  console.error('Error:', err);
+  // Log error with more details
+  console.error('Error Details:', {
+    message: err.message,
+    name: err.name,
+    code: err.code,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
 
   // Mongoose bad ObjectId
   if (err.name === 'CastError') {
@@ -16,10 +21,12 @@ const errorHandler = (err, req, res, next) => {
 
   // Mongoose duplicate key
   if (err.code === 11000) {
-    const message = 'Duplicate field value entered';
+    const field = Object.keys(err.keyValue)[0];
+    const value = err.keyValue[field];
+    const message = `${field} '${value}' already exists`;
     error = {
       message,
-      statusCode: 400
+      statusCode: 409 // Conflict
     };
   }
 
@@ -49,10 +56,20 @@ const errorHandler = (err, req, res, next) => {
     };
   }
 
-  res.status(error.statusCode || 500).json({
+  // Handle headers already sent error
+  if (res.headersSent) {
+    console.error('Headers already sent, cannot send error response');
+    return next(err);
+  }
+
+  // ADDED RETURN STATEMENT - This is crucial!
+  return res.status(error.statusCode || 500).json({
     success: false,
     message: error.message || 'Server Error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    ...(process.env.NODE_ENV === 'development' && { 
+      stack: err.stack,
+      error: err.message 
+    })
   });
 };
 

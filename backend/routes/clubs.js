@@ -37,10 +37,10 @@ router.get('/', optionalAuth, async (req, res) => {
     }
 
     const clubs = await Club.find(query)
-      .populate('leadership.president', 'name email')
-      .populate('leadership.vicePresident', 'name email')
-      .populate('leadership.secretary', 'name email')
-      .populate('leadership.treasurer', 'name email')
+      .populate('leadership.president', 'name email profileImage')
+      .populate('leadership.vicePresident', 'name email profileImage')
+      .populate('leadership.secretary', 'name email profileImage')
+      .populate('leadership.treasurer', 'name email profileImage')
       .sort({ name: 1 })
       .skip(skip)
       .limit(limit);
@@ -55,13 +55,14 @@ router.get('/', optionalAuth, async (req, res) => {
       category: club.category,
       founded: club.founded,
       image: club.image,
-      members: club.members.length,
-      events: club.events.length,
+      members: club.members ? club.members.length : 0,
+      events: club.events ? club.events.length : 0,
       status: club.status,
       contactEmail: club.contactEmail,
       meetingSchedule: club.meetingSchedule,
       leadership: club.leadership,
-      socialMedia: club.socialMedia
+      socialMedia: club.socialMedia,
+      createdAt: club.createdAt
     }));
 
     return res.json({
@@ -71,13 +72,14 @@ router.get('/', optionalAuth, async (req, res) => {
       page,
       pages: Math.ceil(total / limit),
       clubs: transformedClubs,
-      data: transformedClubs // Add data field for compatibility
+      data: transformedClubs
     });
   } catch (error) {
     console.error('Get clubs error:', error);
     return res.status(500).json({
       success: false,
-      message: 'Server error fetching clubs'
+      message: 'Server error fetching clubs',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
@@ -88,12 +90,12 @@ router.get('/', optionalAuth, async (req, res) => {
 router.get('/:id', optionalAuth, async (req, res) => {
   try {
     const club = await Club.findById(req.params.id)
-      .populate('members.user', 'name email studentId department year')
-      .populate('leadership.president', 'name email studentId')
-      .populate('leadership.vicePresident', 'name email studentId')
-      .populate('leadership.secretary', 'name email studentId')
-      .populate('leadership.treasurer', 'name email studentId')
-      .populate('events.attendees', 'name email');
+      .populate('members.user', 'name email studentId department year profileImage')
+      .populate('leadership.president', 'name email studentId profileImage')
+      .populate('leadership.vicePresident', 'name email studentId profileImage')
+      .populate('leadership.secretary', 'name email studentId profileImage')
+      .populate('leadership.treasurer', 'name email studentId profileImage')
+      .populate('events.attendees', 'name email profileImage');
 
     if (!club) {
       return res.status(404).json({
@@ -110,15 +112,16 @@ router.get('/:id', optionalAuth, async (req, res) => {
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       club
     });
   } catch (error) {
     console.error('Get club error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: 'Server error fetching club'
+      message: 'Server error fetching club',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
@@ -131,9 +134,11 @@ router.post('/', protect, adminOnly, validateClub, async (req, res) => {
     const { name, description, category, founded, image, contactEmail, meetingSchedule, requirements } = req.body;
 
     // Check if club name already exists
-    const existingClub = await Club.findOne({ name: { $regex: new RegExp(`^${name}$`, 'i') } });
+    const existingClub = await Club.findOne({ 
+      name: { $regex: new RegExp(`^${name}$`, 'i') } 
+    });
     if (existingClub) {
-      return res.status(400).json({
+      return res.status(409).json({
         success: false,
         message: 'Club with this name already exists'
       });
@@ -143,24 +148,28 @@ router.post('/', protect, adminOnly, validateClub, async (req, res) => {
       name,
       description,
       category,
-      founded,
+      founded: founded || new Date().getFullYear(),
       image,
       contactEmail,
       meetingSchedule,
       requirements,
-      status: 'active' // Admin created clubs are automatically active
+      status: 'active',
+      createdBy: req.user._id
     });
 
-    res.status(201).json({
+    await club.populate('createdBy', 'name email');
+
+    return res.status(201).json({
       success: true,
       message: 'Club created successfully',
       club
     });
   } catch (error) {
     console.error('Create club error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: 'Server error creating club'
+      message: 'Server error creating club',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
@@ -187,7 +196,7 @@ router.put('/:id', protect, adminOnly, async (req, res) => {
         _id: { $ne: req.params.id }
       });
       if (existingClub) {
-        return res.status(400).json({
+        return res.status(409).json({
           success: false,
           message: 'Club with this name already exists'
         });
@@ -206,16 +215,17 @@ router.put('/:id', protect, adminOnly, async (req, res) => {
 
     await club.save();
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Club updated successfully',
       club
     });
   } catch (error) {
     console.error('Update club error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: 'Server error updating club'
+      message: 'Server error updating club',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
@@ -241,15 +251,16 @@ router.delete('/:id', protect, adminOnly, async (req, res) => {
 
     await Club.findByIdAndDelete(req.params.id);
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Club deleted successfully'
     });
   } catch (error) {
     console.error('Delete club error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: 'Server error deleting club'
+      message: 'Server error deleting club',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
@@ -267,6 +278,7 @@ router.post('/:id/join', protect, async (req, res) => {
         message: 'Full name, department, and year are required'
       });
     }
+
     const club = await Club.findById(req.params.id);
     if (!club) {
       return res.status(404).json({
@@ -283,7 +295,10 @@ router.post('/:id/join', protect, async (req, res) => {
     }
 
     // Check if user is already a member
-    const existingMember = club.members.find(member => member.user.toString() === (req.user._id || req.user.id));
+    const existingMember = club.members.find(member => 
+      member.user.toString() === req.user._id.toString()
+    );
+    
     if (existingMember) {
       if (existingMember.status === 'pending') {
         return res.status(400).json({
@@ -299,27 +314,28 @@ router.post('/:id/join', protect, async (req, res) => {
 
     // Add user to club members
     club.members.push({
-      user: req.user._id || req.user.id,
-      fullName,
-      department,
-      year,
+      user: req.user._id,
+      fullName: fullName || req.user.name,
+      department: department || req.user.department,
+      year: year || req.user.year,
       background,
       role: 'member',
-      status: 'pending'
+      status: 'pending',
+      joinedAt: new Date()
     });
 
     await club.save();
 
-
-    res.json({
+    return res.json({
       success: true,
       message: 'Join request submitted successfully. Waiting for admin approval.'
     });
   } catch (error) {
     console.error('Join club error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: 'Server error joining club'
+      message: 'Server error joining club',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
@@ -346,6 +362,7 @@ router.patch('/:id/members/:memberId/approve', protect, adminOnly, async (req, r
     }
 
     member.status = 'approved';
+    member.approvedAt = new Date();
     await club.save();
 
     // Add club to user's joinedClubs
@@ -353,13 +370,13 @@ router.patch('/:id/members/:memberId/approve', protect, adminOnly, async (req, r
       $addToSet: { joinedClubs: club._id }
     });
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Member approved successfully'
     });
   } catch (error) {
     console.error('Approve member error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error approving member'
     });
@@ -390,13 +407,13 @@ router.patch('/:id/members/:memberId/reject', protect, adminOnly, async (req, re
     member.status = 'rejected';
     await club.save();
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Member rejected successfully'
     });
   } catch (error) {
     console.error('Reject member error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error rejecting member'
     });
@@ -409,7 +426,7 @@ router.patch('/:id/members/:memberId/reject', protect, adminOnly, async (req, re
 router.get('/:id/join-requests', protect, adminOnly, async (req, res) => {
   try {
     const club = await Club.findById(req.params.id)
-      .populate('members.user', 'name username');
+      .populate('members.user', 'name username email profileImage');
 
     if (!club) {
       return res.status(404).json({
@@ -420,18 +437,20 @@ router.get('/:id/join-requests', protect, adminOnly, async (req, res) => {
 
     const pendingRequests = club.members.filter(member => member.status === 'pending');
 
-    res.json({
+    return res.json({
       success: true,
+      count: pendingRequests.length,
       requests: pendingRequests
     });
   } catch (error) {
     console.error('Get join requests error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error fetching join requests'
     });
   }
 });
+
 // @desc    Leave club
 // @route   POST /api/clubs/:id/leave
 // @access  Private
@@ -446,7 +465,10 @@ router.post('/:id/leave', protect, async (req, res) => {
     }
 
     // Check if user is a member
-    const memberIndex = club.members.findIndex(member => member.user.toString() === (req.user._id || req.user.id));
+    const memberIndex = club.members.findIndex(member => 
+      member.user.toString() === req.user._id.toString()
+    );
+    
     if (memberIndex === -1) {
       return res.status(400).json({
         success: false,
@@ -459,17 +481,17 @@ router.post('/:id/leave', protect, async (req, res) => {
     await club.save();
 
     // Remove club from user's joinedClubs
-    await User.findByIdAndUpdate(req.user._id || req.user.id, {
+    await User.findByIdAndUpdate(req.user._id, {
       $pull: { joinedClubs: club._id }
     });
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Successfully left the club'
     });
   } catch (error) {
     console.error('Leave club error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error leaving club'
     });
@@ -483,11 +505,12 @@ router.get('/stats/overview', protect, adminOnly, async (req, res) => {
   try {
     const totalClubs = await Club.countDocuments();
     const activeClubs = await Club.countDocuments({ status: 'active' });
-    const pendingClubs = await Club.countDocuments({ status: 'pending_approval' });
+    const pendingClubs = await Club.countDocuments({ status: 'pending' });
     const inactiveClubs = await Club.countDocuments({ status: 'inactive' });
 
     // Clubs by category
     const clubsByCategory = await Club.aggregate([
+      { $match: { category: { $exists: true, $ne: null } } },
       { $group: { _id: '$category', count: { $sum: 1 } } },
       { $sort: { count: -1 } }
     ]);
@@ -505,7 +528,7 @@ router.get('/stats/overview', protect, adminOnly, async (req, res) => {
       { $limit: 5 }
     ]);
 
-    res.json({
+    return res.json({
       success: true,
       stats: {
         totalClubs,
@@ -520,7 +543,7 @@ router.get('/stats/overview', protect, adminOnly, async (req, res) => {
     });
   } catch (error) {
     console.error('Get club stats error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error fetching club statistics'
     });

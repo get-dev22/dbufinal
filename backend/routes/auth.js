@@ -2,6 +2,7 @@
 
 const express = require("express");
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const { protect } = require("../middleware/auth");
 const {
@@ -26,6 +27,8 @@ router.post("/register", validateUserRegistration, async (req, res) => {
 		const { name, username, password, department, year, phoneNumber, email } =
 			req.body;
 
+		console.log('Registration attempt:', { username, email });
+
 		// Check if user exists
 		const userExists = await User.findOne({
 			$or: [{ username: username }, ...(email ? [{ email: email }] : [])],
@@ -46,20 +49,20 @@ router.post("/register", validateUserRegistration, async (req, res) => {
 			department,
 			year,
 			phoneNumber,
-			email: email || undefined, // Only set email if provided
-			studentId: username, // Use username as student ID
+			email: email || undefined,
+			studentId: username,
 		});
 
 		// Generate token
 		const token = generateToken(user._id);
 
-		res.status(201).json({
+		console.log('Registration successful:', username);
+		return res.status(201).json({
 			success: true,
 			message: "User registered successfully",
 			token,
 			user: {
 				id: user._id,
-				_id: user._id,
 				name: user.name,
 				username: user.username,
 				email: user.email,
@@ -73,7 +76,6 @@ router.post("/register", validateUserRegistration, async (req, res) => {
 	} catch (error) {
 		console.error("Registration error:", error);
 
-		// Handle validation errors
 		if (error.name === "ValidationError") {
 			const errors = Object.values(error.errors).map((err) => err.message);
 			return res.status(400).json({
@@ -83,7 +85,7 @@ router.post("/register", validateUserRegistration, async (req, res) => {
 			});
 		}
 
-		res.status(500).json({
+		return res.status(500).json({
 			success: false,
 			message: "Server error during registration",
 		});
@@ -97,26 +99,41 @@ router.post("/login", validateUserLogin, async (req, res) => {
 	try {
 		const { username, password } = req.body;
 
+		console.log('Login attempt:', username);
+
 		// Check for user and include password
 		const user = await User.findOne({ username }).select("+password");
 		if (!user) {
+			console.log('User not found:', username);
 			return res.status(401).json({
 				success: false,
 				message: "Invalid credentials",
 			});
 		}
 
+		console.log('User found:', user.username, 'Active:', user.isActive, 'Locked:', user.isLocked);
+
 		// Check if account is locked
-		if (user.isLocked) {
+		if (user.isLocked && user.lockUntil > Date.now()) {
+			console.log('Account locked:', username);
 			return res.status(423).json({
 				success: false,
-				message:
-					"Account temporarily locked due to too many failed login attempts",
+				message: "Account temporarily locked due to too many failed login attempts",
 			});
+		}
+
+		// Reset lock if expired
+		if (user.isLocked && user.lockUntil <= Date.now()) {
+			user.loginAttempts = 0;
+			user.isLocked = false;
+			user.lockUntil = undefined;
+			await user.save();
+			console.log('Lock reset for:', username);
 		}
 
 		// Check if user is active
 		if (!user.isActive) {
+			console.log('Account inactive:', username);
 			return res.status(401).json({
 				success: false,
 				message: "Account has been deactivated",
@@ -124,29 +141,43 @@ router.post("/login", validateUserLogin, async (req, res) => {
 		}
 
 		// Check password
-		const isMatch = await user.matchPassword(password);
+		const isMatch = await bcrypt.compare(password, user.password);
+		console.log('Password match result:', isMatch);
+
 		if (!isMatch) {
+			console.log('Password mismatch for:', username);
+			
 			// Increment login attempts
-			await user.incLoginAttempts();
+			user.loginAttempts += 1;
+			if (user.loginAttempts >= 5) {
+				user.isLocked = true;
+				user.lockUntil = Date.now() + 30 * 60 * 1000;
+			}
+			await user.save();
+			
 			return res.status(401).json({
 				success: false,
 				message: "Invalid credentials",
 			});
 		}
 
-		// Update last login
-		await user.updateLastLogin();
+		// Reset login attempts on successful login
+		user.loginAttempts = 0;
+		user.isLocked = false;
+		user.lockUntil = undefined;
+		user.lastLogin = new Date();
+		await user.save();
 
 		// Generate token
 		const token = generateToken(user._id);
 
-		res.json({
+		console.log('Login successful:', username);
+		return res.json({
 			success: true,
 			message: "Login successful",
 			token,
 			user: {
 				id: user._id,
-				_id: user._id,
 				name: user.name,
 				username: user.username,
 				email: user.email,
@@ -159,7 +190,7 @@ router.post("/login", validateUserLogin, async (req, res) => {
 		});
 	} catch (error) {
 		console.error("Login error:", error);
-		res.status(500).json({
+		return res.status(500).json({
 			success: false,
 			message: "Server error during login",
 		});
@@ -170,28 +201,219 @@ router.post("/login", validateUserLogin, async (req, res) => {
 // @route   POST /api/auth/admin-login
 // @access  Public
 router.post("/admin-login", async (req, res) => {
-	const { username, password } = req.body;
+  try {
+    const { username, password } = req.body;
 
-	try {
-		const admin = await User.findOne({ username }).select("+password");
-		if (!admin) {
-			return res.status(401).json({ message: "Invalid username or password" });
-		}
+    console.log('Admin login attempt:', username);
 
-		const isMatch = await admin.matchPassword(password);
-		if (!isMatch) {
-			return res.status(401).json({ message: "Invalid username or password" });
-		}
+    // Find user with password field
+    const admin = await User.findOne({ username }).select("+password");
+    if (!admin) {
+      return res.status(401).json({ 
+        success: false,
+        message: "Invalid username or password" 
+      });
+    }
 
-		const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRET, {
-			expiresIn: "1h",
-		});
-		res.status(200).json({ token });
-	} catch (error) {
-		console.error("Login error:", error);
-		res.status(500).json({ message: "Internal server error" });
-	}
+    // Check if user is actually an admin
+    if (!admin.isAdmin && admin.role !== 'admin') {
+      console.log('Admin privilege check failed:', {
+        username: admin.username,
+        isAdmin: admin.isAdmin,
+        role: admin.role
+      });
+      return res.status(403).json({ 
+        success: false,
+        message: "Access denied. Admin privileges required." 
+      });
+    }
+
+    // Check if account is active
+    if (!admin.isActive) {
+      return res.status(403).json({ 
+        success: false,
+        message: "Account has been deactivated" 
+      });
+    }
+
+    // Check if account is locked
+    if (admin.isLocked && admin.lockUntil > Date.now()) {
+      return res.status(423).json({ 
+        success: false,
+        message: "Account temporarily locked due to too many failed login attempts" 
+      });
+    }
+
+    // Check password using bcrypt
+    const isMatch = await bcrypt.compare(password, admin.password);
+    console.log('Admin password match:', isMatch);
+    
+    if (!isMatch) {
+      // Increment login attempts
+      admin.loginAttempts += 1;
+      if (admin.loginAttempts >= 5) {
+        admin.isLocked = true;
+        admin.lockUntil = Date.now() + 30 * 60 * 1000;
+      }
+      await admin.save();
+
+      return res.status(401).json({ 
+        success: false,
+        message: "Invalid username or password" 
+      });
+    }
+
+    // Reset login attempts on successful login
+    admin.loginAttempts = 0;
+    admin.isLocked = false;
+    admin.lockUntil = undefined;
+    admin.lastLogin = new Date();
+    await admin.save();
+
+    // Generate token with admin role
+    const token = jwt.sign(
+      { 
+        id: admin._id, 
+        role: 'admin',
+        isAdmin: true 
+      }, 
+      process.env.JWT_SECRET,
+      { expiresIn: "24h" }
+    );
+
+    console.log('Admin login successful:', username);
+    
+    return res.status(200).json({ 
+      success: true,
+      message: "Admin login successful",
+      token,
+      user: {
+        id: admin._id,
+        name: admin.name,
+        username: admin.username,
+        email: admin.email,
+        role: admin.role,
+        isAdmin: admin.isAdmin,
+        profileImage: admin.profileImage
+      }
+    });
+
+  } catch (error) {
+    console.error("Admin login error:", error);
+    return res.status(500).json({ 
+      success: false,
+      message: "Internal server error" 
+    });
+  }
 });
+
+// TEMPORARY: Check admin user status
+router.get("/debug-admin/:username", async (req, res) => {
+  try {
+    const user = await User.findOne({ username: req.params.username });
+    
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
+
+    return res.json({
+      success: true,
+      user: {
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        isAdmin: user.isAdmin,
+        isActive: user.isActive,
+        isLocked: user.isLocked,
+        loginAttempts: user.loginAttempts,
+        lockUntil: user.lockUntil
+      }
+    });
+  } catch (error) {
+    console.error('Debug admin error:', error);
+    return res.status(500).json({ 
+      success: false,
+      message: 'Server error' 
+    });
+  }
+});
+
+// TEMPORARY: Fix admin privileges
+router.post("/fix-admin", async (req, res) => {
+  try {
+    const { username } = req.body;
+    
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'User not found' 
+      });
+    }
+
+    // Make user an admin
+    user.isAdmin = true;
+    user.role = 'admin';
+    user.isActive = true;
+    user.isLocked = false;
+    user.loginAttempts = 0;
+    user.lockUntil = undefined;
+    
+    await user.save();
+
+    return res.json({ 
+      success: true, 
+      message: `Admin privileges granted to ${username}`,
+      user: {
+        username: user.username,
+        isAdmin: user.isAdmin,
+        role: user.role,
+        isActive: user.isActive,
+        isLocked: user.isLocked
+      }
+    });
+  } catch (error) {
+    console.error('Fix admin error:', error);
+    return res.status(500).json({ 
+      success: false,
+      message: 'Server error' 
+    });
+  }
+});
+
+// TEMPORARY: Reset admin password
+router.post("/reset-admin-password", async (req, res) => {
+  try {
+    const { username, newPassword } = req.body;
+    
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'User not found' 
+      });
+    }
+
+    // Reset password (will be hashed automatically)
+    user.password = newPassword;
+    await user.save();
+
+    return res.json({ 
+      success: true, 
+      message: `Password reset for ${username}` 
+    });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    return res.status(500).json({ 
+      success: false,
+      message: 'Server error' 
+    });
+  }
+});
+
 // @desc    Get current user profile
 // @route   GET /api/auth/profile
 // @access  Private
@@ -201,13 +423,13 @@ router.get("/profile", protect, async (req, res) => {
 			.populate("joinedClubs", "name category")
 			.select("-password");
 
-		res.json({
+		return res.json({
 			success: true,
 			user,
 		});
 	} catch (error) {
 		console.error("Profile fetch error:", error);
-		res.status(500).json({
+		return res.status(500).json({
 			success: false,
 			message: "Server error fetching profile",
 		});
@@ -239,7 +461,7 @@ router.put("/profile", protect, async (req, res) => {
 
 		await user.save();
 
-		res.json({
+		return res.json({
 			success: true,
 			message: "Profile updated successfully",
 			user: {
@@ -258,7 +480,7 @@ router.put("/profile", protect, async (req, res) => {
 		});
 	} catch (error) {
 		console.error("Profile update error:", error);
-		res.status(500).json({
+		return res.status(500).json({
 			success: false,
 			message: "Server error updating profile",
 		});
@@ -289,7 +511,7 @@ router.put("/change-password", protect, async (req, res) => {
 		const user = await User.findById(req.user.id).select("+password");
 
 		// Check current password
-		const isMatch = await user.matchPassword(currentPassword);
+		const isMatch = await bcrypt.compare(currentPassword, user.password);
 		if (!isMatch) {
 			return res.status(400).json({
 				success: false,
@@ -301,13 +523,13 @@ router.put("/change-password", protect, async (req, res) => {
 		user.password = newPassword;
 		await user.save();
 
-		res.json({
+		return res.json({
 			success: true,
 			message: "Password changed successfully",
 		});
 	} catch (error) {
 		console.error("Password change error:", error);
-		res.status(500).json({
+		return res.status(500).json({
 			success: false,
 			message: "Server error changing password",
 		});
@@ -318,7 +540,7 @@ router.put("/change-password", protect, async (req, res) => {
 // @route   POST /api/auth/logout
 // @access  Private
 router.post("/logout", protect, (req, res) => {
-	res.json({
+	return res.json({
 		success: true,
 		message: "Logged out successfully",
 	});

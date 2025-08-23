@@ -1,125 +1,152 @@
 /** @format */
 
 const User = require("../models/User");
+const bcrypt = require("bcryptjs");
 
 const createDefaultAdmin = async () => {
-	try {
-		// Check if any admin already exists
-		const adminExists = await User.findOne({
-			$or: [{ username: "admindbu12" }, { email: "admin@dbu.edu.et" }],
-		});
+  try {
+    // Check if any admin already exists
+    const adminExists = await User.findOne({
+      $or: [{ username: "admindbu12" }, { email: "admin@dbu.edu.et" }],
+    });
 
-		if (!adminExists) {
-			const admin = await User.create({
-				name: "System Administrator",
-				username: "dbu10101030",
-				email: "admin@dbu.edu.et",
-				password: "Admin123#",
-				role: "admin",
-				isAdmin: true,
-				department: "Administration",
-				year: "1st Year",
-			});
+    if (!adminExists) {
+      // Hash password before creating
+      const hashedPassword = await bcrypt.hash("Admin123#", 12);
+      
+      const admin = await User.create({
+        name: "System Administrator",
+        username: "dbu10101030",
+        email: "admin@dbu.edu.et",
+        password: hashedPassword,
+        role: "admin",
+        isAdmin: true,
+        department: "Administration",
+        year: "1st Year",
+      });
 
-			console.log("✅ Default admin user created:", admin.username);
-		} else {
-			console.log("ℹ️ Admin user already exists");
-		}
+      console.log("✅ Default admin user created:", admin.username);
+    } else {
+      console.log("ℹ️ Admin user already exists");
+    }
 
-		// Create additional admin users with different roles
-		const additionalAdmins = [
-			{
-				name: "President Admin",
-				username: "dbu10101020",
-				email: "president@dbu.edu.et",
-				password: "Admin123#",
-				role: "admin",
-				isAdmin: true,
-				department: "Student Affairs",
-				year: "1st Year",
-			},
-			{
-				name: "Academic Affairs Admin",
-				username: "dbu10101010",
-				email: "academic@dbu.edu.et",
-				password: "Admin123#",
-				role: "admin",
-				isAdmin: true,
-				department: "Academic Affairs",
-				year: "1st Year",
-			},
-			{
-				name: "Clubs Admin",
-				username: "dbu10101040",
-				email: "clubs@dbu.edu.et",
-				password: "Admin123#",
-				role: "admin",
-				isAdmin: true,
-				department: "Student Activities",
-				year: "1st Year",
-			},
-		];
+    // Create additional admin users with different roles
+    const additionalAdmins = [
+      {
+        name: "President Admin",
+        username: "dbu10101020",
+        email: "president@dbu.edu.et",
+        password: "Admin123#",
+        role: "admin",
+        isAdmin: true,
+        department: "Student Affairs",
+        year: "1st Year",
+      },
+      {
+        name: "Academic Affairs Admin",
+        username: "dbu10101010", // This is the username you're having issues with
+        email: "academic@dbu.edu.et",
+        password: "Admin123#",
+        role: "admin",
+        isAdmin: true,
+        department: "Academic Affairs",
+        year: "1st Year",
+      },
+      {
+        name: "Clubs Admin",
+        username: "dbu10101040",
+        email: "clubs@dbu.edu.et",
+        password: "Admin123#",
+        role: "admin",
+        isAdmin: true,
+        department: "Student Activities",
+        year: "1st Year",
+      },
+    ];
 
-		for (const adminData of additionalAdmins) {
-			const existingAdmin = await User.findOne({
-				$or: [
-					{ username: adminData.username.toLowerCase() },
-					{ email: adminData.email },
-				],
-			});
+    for (const adminData of additionalAdmins) {
+      const existingAdmin = await User.findOne({
+        username: adminData.username,
+      });
 
-			if (!existingAdmin) {
-				adminData.username = adminData.username.toLowerCase();
-				const admin = await User.create(adminData);
-				console.log(`✅ Admin created: ${adminData.username}`);
-			} else {
-				console.log(`ℹ️ Admin already exists: ${adminData.username}`);
-			}
-		}
+      if (!existingAdmin) {
+        // Hash password before creating
+        const hashedPassword = await bcrypt.hash(adminData.password, 12);
+        
+        const admin = await User.create({
+          ...adminData,
+          password: hashedPassword
+        });
+        console.log(`✅ Admin created: ${adminData.username}`);
+      } else {
+        console.log(`ℹ️ Admin already exists: ${adminData.username}`);
+        
+        // Hash password if we're updating it
+        const hashedPassword = await bcrypt.hash(adminData.password, 12);
+        
+        // UPDATE EXISTING ADMIN to ensure proper privileges
+        await User.findOneAndUpdate(
+          { username: adminData.username },
+          { 
+            isAdmin: true,
+            role: 'admin',
+            isActive: true,
+            password: hashedPassword, // Update password
+            name: adminData.name, // Ensure name is correct
+            email: adminData.email, // Ensure email is correct
+            department: adminData.department,
+            year: adminData.year
+          }
+        );
+        console.log(`✅ Admin privileges updated for: ${adminData.username}`);
+      }
+    }
 
-		// Create sample students for testing
-		const sampleStudents = [
-			{
-				name: "John Doe",
-				username: "dbu10304058",
-				email: "john.doe@dbu.edu.et",
-				password: "Student123#",
-				role: "student",
-				isAdmin: false,
-				department: "Computer Science",
-				year: "4th Year",
-			},
-			{
-				name: "Jane Smith",
-				username: "dbu10304059",
-				email: "jane.smith@dbu.edu.et",
-				password: "Student123#",
-				role: "student",
-				isAdmin: false,
-				department: "Engineering",
-				year: "3rd Year",
-			},
-		];
+    // Create sample students for testing
+    const sampleStudents = [
+      {
+        name: "John Doe",
+        username: "dbu10304058",
+        email: "john.doe@dbu.edu.et",
+        password: "Student123#",
+        role: "student",
+        isAdmin: false,
+        department: "Computer Science",
+        year: "4th Year",
+      },
+      {
+        name: "Jane Smith",
+        username: "dbu10304059",
+        email: "jane.smith@dbu.edu.et",
+        password: "Student123#",
+        role: "student",
+        isAdmin: false,
+        department: "Engineering",
+        year: "3rd Year",
+      },
+    ];
 
-		for (const studentData of sampleStudents) {
-			const existingStudent = await User.findOne({
-				$or: [
-					{ username: studentData.username.toLowerCase() },
-					{ email: studentData.email },
-				],
-			});
+    for (const studentData of sampleStudents) {
+      const existingStudent = await User.findOne({
+        username: studentData.username,
+      });
 
-			if (!existingStudent) {
-				studentData.username = studentData.username.toLowerCase();
-				const student = await User.create(studentData);
-				console.log(`✅ Sample student created: ${studentData.username}`);
-			} else {
-				console.log(`ℹ️ Student already exists: ${studentData.username}`);
-			}
-		}
-	} catch (error) {
-		console.error("❌ Error creating default users:", error.message);
-	}
+      if (!existingStudent) {
+        // Hash password before creating
+        const hashedPassword = await bcrypt.hash(studentData.password, 12);
+        
+        const student = await User.create({
+          ...studentData,
+          password: hashedPassword
+        });
+        console.log(`✅ Sample student created: ${studentData.username}`);
+      } else {
+        console.log(`ℹ️ Student already exists: ${studentData.username}`);
+      }
+    }
+  } catch (error) {
+    console.error("❌ Error creating default users:", error.message);
+  }
 };
 
 module.exports = { createDefaultAdmin };

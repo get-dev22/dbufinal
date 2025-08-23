@@ -26,20 +26,20 @@ const app = express();
 // Security middleware
 app.use(helmet());
 app.use(
-	cors({
-		origin:
-			process.env.NODE_ENV === "production"
-				? ["https://your-frontend-domain.com"]
-				: ["http://localhost:3000", "http://localhost:5173"],
-		credentials: true,
-	})
+  cors({
+    origin:
+      process.env.NODE_ENV === "production"
+        ? ["https://your-frontend-domain.com"]
+        : ["http://localhost:3000", "http://localhost:5173", "http://localhost:8080"],
+    credentials: true,
+  })
 );
 
 // Rate limiting
 const limiter = rateLimit({
-	windowMs: 15 * 60 * 1000, // 15 minutes
-	max: 100, // limit each IP to 100 requests per windowMs
-	message: "Too many requests from this IP, please try again later.",
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // Increased limit for development
+  message: "Too many requests from this IP, please try again later.",
 });
 app.use("/api/", limiter);
 
@@ -49,7 +49,7 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // Logging middleware
 if (process.env.NODE_ENV === "development") {
-	app.use(morgan("dev"));
+  app.use(morgan("dev"));
 }
 
 // Static files
@@ -57,11 +57,12 @@ app.use("/uploads", express.static("uploads"));
 
 // Health check endpoint
 app.get("/health", (req, res) => {
-	res.status(200).json({
-		status: "OK",
-		timestamp: new Date().toISOString(),
-		uptime: process.uptime(),
-	});
+  return res.status(200).json({
+    status: "OK",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    database: mongoose.connection.readyState === 1 ? "Connected" : "Disconnected"
+  });
 });
 
 // API routes
@@ -75,54 +76,119 @@ app.use("/api/contact", contactRoutes);
 
 // 404 handler
 app.use("*", (req, res) => {
-	res.status(404).json({
-		success: false,
-		message: "Route not found",
-	});
+  return res.status(404).json({
+    success: false,
+    message: "Route not found",
+    path: req.originalUrl
+  });
 });
 
-// Error handling middleware
+// Error handling middleware - MUST be the last middleware
 app.use(errorHandler);
+
 console.log("MongoDB URI:", process.env.MONGODB_URI);
-// Database connection
-const connectDB = async () => {
-	try {
-		if (!process.env.MONGODB_URI) {
-			throw new Error("MONGODB_URI is not defined in environment variables");
-		}
 
-		const conn = await mongoose.connect(process.env.MONGODB_URI);
-		console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+// Database connection with retry logic
+const connectDB = async (retries = 5, delay = 5000) => {
+  try {
+    if (!process.env.MONGODB_URI) {
+      throw new Error("MONGODB_URI is not defined in environment variables");
+    }
 
-		// Create default admin user
-		await createDefaultAdmin();
-	} catch (error) {
-		console.error("❌ Database connection error:", error.message);
-		process.exit(1);
-	}
+    const conn = await mongoose.connect(process.env.MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
+    
+    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+    console.log(`✅ Database: ${conn.connection.name}`);
+
+    // Create default admin user
+    try {
+      await createDefaultAdmin();
+    } catch (adminError) {
+      console.warn("⚠️ Admin creation warning:", adminError.message);
+    }
+  } catch (error) {
+    console.error(`❌ Database connection error (${retries} retries left):`, error.message);
+    
+    if (retries > 0) {
+      console.log(`🔄 Retrying connection in ${delay/1000} seconds...`);
+      setTimeout(() => connectDB(retries - 1, delay), delay);
+    } else {
+      console.error("❌ Could not connect to MongoDB after multiple attempts");
+      process.exit(1);
+    }
+  }
 };
 
 // Start server
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
-	await connectDB();
+  try {
+    await connectDB();
 
-	app.listen(PORT, () => {
-		console.log(
-			`Server running in ${
-				process.env.NODE_ENV || "development"
-			} mode on port ${PORT}`
-		);
-	});
+    const server = app.listen(PORT, () => {
+      console.log(`✅ Server running on port ${PORT}`);
+      console.log(`✅ Environment: ${process.env.NODE_ENV || "development"}`);
+      console.log(`✅ Health check: http://localhost:${PORT}/health`);
+    });
+
+    // Handle server errors
+    server.on('error', (error) => {
+      if (error.code === 'EADDRINUSE') {
+        console.error(`❌ Port ${PORT} is already in use`);
+        process.exit(1);
+      } else {
+        console.error('❌ Server error:', error);
+      }
+    });
+
+    // Graceful shutdown
+    const gracefulShutdown = (signal) => {
+      console.log(`\n🔄 Received ${signal}, shutting down gracefully...`);
+      
+      server.close(() => {
+        console.log("✅ HTTP server closed");
+        mongoose.connection.close(false, () => {
+          console.log("✅ MongoDB connection closed");
+          process.exit(0);
+        });
+      });
+
+      // Force close after 10 seconds
+      setTimeout(() => {
+        console.error("❌ Could not close connections in time, forcefully shutting down");
+        process.exit(1);
+      }, 10000);
+    };
+
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+
+  } catch (error) {
+    console.error("❌ Failed to start server:", error);
+    process.exit(1);
+  }
 };
 
-startServer();
-
 // Handle unhandled promise rejections
-process.on("unhandledRejection", (err, promise) => {
-	console.log(`Error: ${err.message}`);
-	process.exit(1);
+process.on("unhandledRejection", (err) => {
+  console.error("❌ Unhandled Rejection:", err.message);
+  console.error(err.stack);
 });
+
+// Handle uncaught exceptions
+process.on("uncaughtException", (err) => {
+  console.error("❌ Uncaught Exception:", err.message);
+  console.error(err.stack);
+  process.exit(1);
+});
+
+// Start the server
+startServer();
 
 module.exports = app;
