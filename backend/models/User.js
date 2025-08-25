@@ -1,5 +1,3 @@
-/** @format */
-
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
@@ -52,6 +50,10 @@ const userSchema = new mongoose.Schema(
 			type: String,
 			required: [true, "Please provide your academic year"],
 			enum: ["1st Year", "2nd Year", "3rd Year", "4th Year", "5th Year"],
+		},
+		isAdmin: {
+			type: Boolean,
+			default: false, // Default value set to false, can be set to true for admin users
 		},
 	},
 	{

@@ -161,11 +161,10 @@ class ApiService {
 	}
 
 	// Club endpoints
-	async getClubs(params = {}) {
+async getClubs(params = {}) {
 		const queryString = new URLSearchParams(params).toString();
 		const endpoint = queryString ? `/clubs?${queryString}` : "/clubs";
-		const response = await this.request(endpoint);
-		return Array.isArray(response) ? response : (response.clubs || response.data || []);
+		return this.request(endpoint);
 	}
 
 	async getClubById(clubId) {
@@ -173,6 +172,9 @@ class ApiService {
 	}
 
 	async createClub(clubData) {
+		if (typeof clubData !== "object" || !clubData) {
+			throw new Error("Invalid club data");
+		}
 		return this.request("/clubs", {
 			method: "POST",
 			body: clubData,
@@ -205,6 +207,10 @@ class ApiService {
 		});
 	}
 
+	async getClubJoinRequests(clubId) {
+		return this.request(`/clubs/${clubId}/join-requests`);
+	}
+
 	async approveClubMember(clubId, memberId) {
 		return this.request(`/clubs/${clubId}/members/${memberId}/approve`, {
 			method: "PATCH",
@@ -217,13 +223,10 @@ class ApiService {
 		});
 	}
 
-	async getClubJoinRequests(clubId) {
-		return this.request(`/clubs/${clubId}/join-requests`);
-	}
-
 	async getClubStats() {
 		return this.request("/clubs/stats/overview");
 	}
+
 
 	// Post endpoints
 	async getPosts(params = {}) {
@@ -382,3 +385,5 @@ class ApiService {
 
 export const apiService = new ApiService();
 export default apiService;
+
+
