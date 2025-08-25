@@ -149,9 +149,7 @@ export function Clubs() {
 		try {
 			const clubData = {
 				...newClub,
-				members: [],
-				events: [],
-				founded: new Date(),
+				founded: new Date().getFullYear().toString(),
 				image:
 					newClub.image ||
 					"https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=400",
@@ -160,13 +158,20 @@ export function Clubs() {
 			await apiService.createClub(clubData);
 			await fetchClubs(); // Refresh the clubs list
 			toast.success("Club created successfully!");
+			setShowNewClubForm(false);
+			setNewClub({
+				name: "",
+				category: "Academic",
+				description: "",
+				image: "",
+				officeLocation: "",
+				contactEmail: "",
+				contactPhone: "",
+				website: "",
+			});
 		} catch (error) {
 			console.error("Failed to create club:", error);
-			toast.error("Failed to create club");
 		}
-
-		setNewClub({ name: "", category: "Academic", description: "", image: "" });
-		setShowNewClubForm(false);
 	};
 
 	const handleDeleteClub = (clubId) => {

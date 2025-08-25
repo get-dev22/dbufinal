@@ -161,10 +161,11 @@ class ApiService {
 	}
 
 	// Club endpoints
-async getClubs(params = {}) {
+	async getClubs(params = {}) {
 		const queryString = new URLSearchParams(params).toString();
 		const endpoint = queryString ? `/clubs?${queryString}` : "/clubs";
-		return this.request(endpoint);
+		const response = await this.request(endpoint);
+		return Array.isArray(response) ? response : (response.clubs || response.data || []);
 	}
 
 	async getClubById(clubId) {

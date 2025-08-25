@@ -109,7 +109,7 @@ export function Elections() {
 		try {
 			const electionData = {
 				...newElection,
-				status: "Pending",
+				status: "upcoming",
 				totalVotes: 0,
 				eligibleVoters: 12547,
 			};
@@ -117,20 +117,18 @@ export function Elections() {
 			await apiService.createElection(electionData);
 			await fetchElections();
 			toast.success("Election created successfully!");
+			setNewElection({
+				title: "",
+				description: "",
+				startDate: "",
+				endDate: "",
+				candidates: [],
+			});
+			setShowNewElectionForm(false);
 		} catch (error) {
 			console.error('Failed to create election:', error);
 			toast.error("Failed to create election");
-			return;
 		}
-
-		setNewElection({
-			title: "",
-			description: "",
-			startDate: "",
-			endDate: "",
-			candidates: [],
-		});
-		setShowNewElectionForm(false);
 	};
 
 	const handleVote = async (electionId, candidateId) => {
@@ -573,6 +571,11 @@ export function Elections() {
 									</button>
 								</div>
 
+								{votedElections.has(selectedElection.id) && (
+									<div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+										<p className="text-green-800 font-medium">✓ You have already voted in this election</p>
+									</div>
+								)}
 								<div className="space-y-4">
 									{selectedElection.candidates.map((candidate) => (
 										<div

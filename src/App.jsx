@@ -7,12 +7,10 @@ import { ProtectedRoute } from "./components/Auth/ProtectedRoute";
 import { AdminRoute } from "./components/Auth/AdminRoute";
 import { LoginForm } from "./components/Auth/LoginForm";
 import { Home } from "./components/Pages/Home";
-import { About } from "./components/Pages/About";
 import { Clubs } from "./components/Pages/Clubs";
 import { Elections } from "./components/Pages/Elections";
 import { Services } from "./components/Pages/Services";
 import { Latest } from "./components/Pages/Latest";
-import { Contact } from "./components/Pages/Contact";
 import { Complaints } from "./components/Pages/Complaints";
 import { Dashboard } from "./components/Dashboard/Dashboard";
 import { AdminDashboard } from "./components/Admin/AdminDashboard";
@@ -38,8 +36,6 @@ function AppContent() {
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Home />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
           
           {/* Auth Route */}
           <Route

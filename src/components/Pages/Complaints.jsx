@@ -117,7 +117,7 @@ export function Complaints() {
 
 		const sendResponse = async () => {
 			try {
-				await apiService.addComplaintResponse(complaintId, responseMessage);
+				await apiService.addComplaintResponse(complaintId, { message: responseMessage });
 				await fetchComplaints(); // Refresh complaints
 				toast.success("Response sent and complaint resolved");
 				setResponseMessage("");
@@ -151,14 +151,14 @@ export function Complaints() {
 		setShowDocumentUpload(false);
 	};
 
-	const resolveComplaint = async (complaintId) => {
+	const handleResolveComplaint = async (complaintId) => {
 		if (!user?.isAdmin) {
 			toast.error("Only admins can resolve complaints");
 			return;
 		}
 
 		try {
-			await apiService.resolveComplaint(complaintId);
+			await apiService.updateComplaintStatus(complaintId, "resolved");
 			await fetchComplaints(); // Refresh complaints
 			toast.success("Complaint resolved successfully");
 		} catch (error) {
@@ -219,7 +219,7 @@ export function Complaints() {
 		responseMessage, 
 		setResponseMessage, 
 		handleSendResponse, 
-		resolveComplaint,
+		handleResolveComplaint,
 		getStatusIcon,
 		getStatusColor,
 		getPriorityColor
@@ -255,7 +255,7 @@ export function Complaints() {
 				<div className="flex items-center space-x-2">
 					{user?.isAdmin && complaint.status !== "resolved" && (
 						<button
-							onClick={() => resolveComplaint(complaint._id || complaint.id)}
+							onClick={() => handleResolveComplaint(complaint._id || complaint.id)}
 							className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors">
 							Resolve
 						</button>
@@ -434,7 +434,7 @@ export function Complaints() {
 								responseMessage={responseMessage}
 								setResponseMessage={setResponseMessage}
 								handleSendResponse={handleSendResponse}
-								resolveComplaint={resolveComplaint}
+								handleResolveComplaint={handleResolveComplaint}
 								getStatusIcon={getStatusIcon}
 								getStatusColor={getStatusColor}
 								getPriorityColor={getPriorityColor}

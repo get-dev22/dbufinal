@@ -224,7 +224,7 @@ router.post('/:id/responses', protect, adminOnly, async (req, res) => {
     const response = {
       author: req.user.name,
       authorId: req.user.id,
-      message: message.trim(),
+      message: typeof message === 'string' ? message.trim() : message.message?.trim() || '',
       isOfficial: true
     };
 

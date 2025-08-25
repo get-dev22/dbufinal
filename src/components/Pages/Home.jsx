@@ -105,11 +105,6 @@ export const Home = () => {
 									</Link>
 								)}
 
-								<Link
-									to="/about"
-									className="border-2 border-white text-white px-8 py-4 rounded-xl font-semibold hover:bg-white hover:text-blue-700 transition-colors">
-									Learn More
-								</Link>
 							</div>
 						</motion.div>
 					</div>
@@ -224,14 +219,14 @@ export const Home = () => {
 					<h2 className="text-3xl md:text-4xl font-bold mb-4">
 						Join the Student Union Community
 					</h2>
-					<p className="text-xl text-green-100 mb-8 max-w-3xl mx-auto">
+					<p className="text-xl text-blue-100 mb-8 max-w-3xl mx-auto">
 						Make your voice heard, drive change, and enhance your university
 						experience
 					</p>
 					{!user && (
 						<Link
 							to="/login"
-							className="bg-white text-green-700 px-8 py-4 rounded-xl font-semibold hover:bg-green-50 transition-colors inline-flex items-center">
+							className="bg-white text-blue-700 px-8 py-4 rounded-xl font-semibold hover:bg-blue-50 transition-colors inline-flex items-center">
 							Get Started Today
 							<ArrowRight className="w-5 h-5 ml-2" />
 						</Link>

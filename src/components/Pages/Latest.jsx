@@ -77,31 +77,30 @@ export function Latest() {
 			const postData = {
 				...newPost,
 				type: newPost.type.charAt(0).toUpperCase() + newPost.type.slice(1),
-				important: newPost.type === "announcement" ? newPost.important : false,
+				important: newPost.type === "announcement" ? (newPost.important || false) : false,
 				location: newPost.type === "event" ? newPost.location : "",
 				time: newPost.type === "event" ? newPost.time : "",
+				eventDate: newPost.type === "event" ? newPost.date : undefined,
 			};
 
 			await apiService.createPost(postData);
 			await fetchPosts(); // Refresh the posts list
 			toast.success("Post created successfully!");
+			setNewPost({
+				type: "news",
+				title: "",
+				content: "",
+				date: new Date().toISOString().split("T")[0],
+				category: "General",
+				image: null,
+				location: "",
+				time: "",
+			});
+			setImagePreview(null);
 		} catch (error) {
 			console.error("Failed to create post:", error);
 			toast.error("Failed to create post");
-			return;
 		}
-
-		setNewPost({
-			type: "news",
-			title: "",
-			content: "",
-			date: new Date().toISOString().split("T")[0],
-			category: "General",
-			image: null,
-			location: "",
-			time: "",
-		});
-		setImagePreview(null);
 	};
 
 	const handleDeletePost = (postId) => {
