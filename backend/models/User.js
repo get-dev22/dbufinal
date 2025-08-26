@@ -55,6 +55,21 @@ const userSchema = new mongoose.Schema(
 			type: Boolean,
 			default: false, // Default value set to false, can be set to true for admin users
 		},
+		role: {
+			type: String,
+			enum: ["student", "admin"],
+			default: "student",
+		},
+		isLocked: {
+			type: Boolean,
+			default: false,
+		},
+		loginAttempts: {
+			type: Number,
+			default: 0,
+		},
+		lockUntil: Date,
+		lastLogin: Date,
 	},
 	{
 		timestamps: true,

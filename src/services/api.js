@@ -39,7 +39,6 @@ class ApiService {
 					errorData.message || `HTTP error! status: ${response.status}`
 				);
 			}
-			console.log("Club created successfully:", response);
 
 			return await response.json();
 		} catch (error) {
@@ -120,8 +119,13 @@ class ApiService {
 	async getComplaints(params = {}) {
 		const queryString = new URLSearchParams(params).toString();
 		const endpoint = queryString ? `/complaints?${queryString}` : "/complaints";
-		const response = await this.request(endpoint);
-		return Array.isArray(response) ? response : (response.complaints || response.data || []);
+		try {
+			const response = await this.request(endpoint);
+			return Array.isArray(response) ? response : (response.complaints || response.data || []);
+		} catch (error) {
+			console.error('Failed to fetch complaints:', error);
+			return [];
+		}
 	}
 
 	async getComplaintById(complaintId) {
@@ -164,8 +168,13 @@ class ApiService {
 	async getClubs(params = {}) {
 		const queryString = new URLSearchParams(params).toString();
 		const endpoint = queryString ? `/clubs?${queryString}` : "/clubs";
-		const response = await this.request(endpoint);
-		return Array.isArray(response) ? response : (response.clubs || response.data || []);
+		try {
+			const response = await this.request(endpoint);
+			return Array.isArray(response) ? response : (response.clubs || response.data || []);
+		} catch (error) {
+			console.error('Failed to fetch clubs:', error);
+			return [];
+		}
 	}
 
 	async getClubById(clubId) {
@@ -233,8 +242,13 @@ class ApiService {
 	async getPosts(params = {}) {
 		const queryString = new URLSearchParams(params).toString();
 		const endpoint = queryString ? `/posts?${queryString}` : "/posts";
-		const response = await this.request(endpoint);
-		return Array.isArray(response) ? response : (response.posts || response.data || []);
+		try {
+			const response = await this.request(endpoint);
+			return Array.isArray(response) ? response : (response.posts || response.data || []);
+		} catch (error) {
+			console.error('Failed to fetch posts:', error);
+			return [];
+		}
 	}
 
 	async getPostById(postId) {
@@ -288,8 +302,13 @@ class ApiService {
 	async getElections(params = {}) {
 		const queryString = new URLSearchParams(params).toString();
 		const endpoint = queryString ? `/elections?${queryString}` : "/elections";
-		const response = await this.request(endpoint);
-		return Array.isArray(response) ? response : (response.elections || response.data || []);
+		try {
+			const response = await this.request(endpoint);
+			return Array.isArray(response) ? response : (response.elections || response.data || []);
+		} catch (error) {
+			console.error('Failed to fetch elections:', error);
+			return [];
+		}
 	}
 
 	async getElectionById(electionId) {
@@ -344,8 +363,13 @@ class ApiService {
 	async getContactMessages(params = {}) {
 		const queryString = new URLSearchParams(params).toString();
 		const endpoint = queryString ? `/contact?${queryString}` : "/contact";
-		const response = await this.request(endpoint);
-		return response.contacts || response.data || response || [];
+		try {
+			const response = await this.request(endpoint);
+			return response.contacts || response.data || response || [];
+		} catch (error) {
+			console.error('Failed to fetch contact messages:', error);
+			return [];
+		}
 	}
 
 	async getContactMessageById(contactId) {

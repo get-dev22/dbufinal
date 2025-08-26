@@ -5,33 +5,18 @@ const bcrypt = require("bcryptjs");
 
 const createDefaultAdmin = async () => {
   try {
-    // Check if any admin already exists
-    const adminExists = await User.findOne({
-      $or: [{ username: "admindbu12" }, { email: "admin@dbu.edu.et" }],
-    });
-
-    if (!adminExists) {
-      // Hash password before creating
-      const hashedPassword = await bcrypt.hash("Admin123#", 12);
-      
-      const admin = await User.create({
+    // Create additional admin users with different roles
+    const additionalAdmins = [
+      {
         name: "System Administrator",
         username: "dbu10101030",
         email: "admin@dbu.edu.et",
-        password: hashedPassword,
+        password: "Admin123#",
         role: "admin",
         isAdmin: true,
         department: "Administration",
         year: "1st Year",
-      });
-
-      console.log("✅ Default admin user created:", admin.username);
-    } else {
-      console.log("ℹ️ Admin user already exists");
-    }
-
-    // Create additional admin users with different roles
-    const additionalAdmins = [
+      },
       {
         name: "President Admin",
         username: "dbu10101020",
@@ -43,13 +28,13 @@ const createDefaultAdmin = async () => {
         year: "1st Year",
       },
       {
-        name: "Academic Affairs Admin",
-        username: "dbu10101010", // This is the username you're having issues with
-        email: "academic@dbu.edu.et",
+        name: "Demo Admin",
+        username: "admindbu12",
+        email: "demoadmin@dbu.edu.et",
         password: "Admin123#",
         role: "admin",
         isAdmin: true,
-        department: "Academic Affairs",
+        department: "Administration",
         year: "1st Year",
       },
       {
@@ -91,6 +76,9 @@ const createDefaultAdmin = async () => {
             isAdmin: true,
             role: 'admin',
             isActive: true,
+            isLocked: false,
+            loginAttempts: 0,
+            lockUntil: undefined,
             password: hashedPassword, // Update password
             name: adminData.name, // Ensure name is correct
             email: adminData.email, // Ensure email is correct
@@ -142,6 +130,22 @@ const createDefaultAdmin = async () => {
         console.log(`✅ Sample student created: ${studentData.username}`);
       } else {
         console.log(`ℹ️ Student already exists: ${studentData.username}`);
+        
+        // Update existing student to ensure proper setup
+        const hashedPassword = await bcrypt.hash(studentData.password, 12);
+        await User.findOneAndUpdate(
+          { username: studentData.username },
+          { 
+            password: hashedPassword,
+            isActive: true,
+            isLocked: false,
+            loginAttempts: 0,
+            lockUntil: undefined,
+            role: 'student',
+            isAdmin: false
+          }
+        );
+        console.log(`✅ Student credentials updated for: ${studentData.username}`);
       }
     }
   } catch (error) {
