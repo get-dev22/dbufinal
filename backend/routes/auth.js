@@ -148,7 +148,7 @@ router.post("/login", validateUserLogin, async (req, res) => {
 			console.log('Password mismatch for:', username);
 			
 			// Increment login attempts
-			user.loginAttempts += 1;
+			user.loginAttempts = (user.loginAttempts || 0) + 1;
 			if (user.loginAttempts >= 5) {
 				user.isLocked = true;
 				user.lockUntil = Date.now() + 30 * 60 * 1000;
@@ -183,7 +183,7 @@ router.post("/login", validateUserLogin, async (req, res) => {
 				email: user.email,
 				department: user.department,
 				year: user.year,
-				role: user.role,
+				role: user.role || 'student',
 				isAdmin: user.isAdmin,
 				profileImage: user.profileImage,
 			},

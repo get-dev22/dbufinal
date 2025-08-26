@@ -58,11 +58,10 @@ export function Complaints() {
 		try {
 			setLoading(true);
 			const data = await apiService.getComplaints();
-			setComplaints(data);
+			setComplaints(Array.isArray(data) ? data : []);
 		} catch (error) {
 			console.error("Failed to fetch complaints:", error);
 			toast.error("Failed to load complaints");
-			// Fallback to empty array if API fails
 			setComplaints([]);
 		} finally {
 			setLoading(false);

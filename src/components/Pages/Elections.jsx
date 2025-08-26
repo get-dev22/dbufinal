@@ -47,12 +47,10 @@ export function Elections() {
 		try {
 			setLoading(true);
 			const data = await apiService.getElections();
-			// Ensure data is an array
 			setElections(Array.isArray(data) ? data : []);
 		} catch (error) {
 			console.error("Failed to fetch elections:", error);
 			toast.error("Failed to load elections");
-			// Fallback to empty array if API fails
 			setElections([]);
 		} finally {
 			setLoading(false);

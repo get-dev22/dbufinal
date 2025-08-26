@@ -399,7 +399,7 @@ export function LoginForm() {
                 <p className="font-medium text-blue-800 mb-2">Demo Credentials:</p>
                 {loginType === "admin" ? (
                   <div className="text-blue-700">
-                    <span>Username: admindbu12</span><br />
+                    <span>Username: dbu10101030 or admindbu12</span><br />
                     <span>Password: Admin123#</span>
                   </div>
                 ) : (
