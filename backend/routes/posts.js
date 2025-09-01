@@ -130,6 +130,8 @@ router.post('/', protect, adminOnly, validatePost, async (req, res) => {
       scheduledFor
     } = req.body;
 
+    console.log('Received post data:', req.body);
+    console.log('User creating post:', req.user);
     const postData = {
       title,
       content,
@@ -159,19 +161,22 @@ router.post('/', protect, adminOnly, validatePost, async (req, res) => {
     if (typeof isPinned === 'boolean') postData.isPinned = isPinned;
     if (scheduledFor) postData.scheduledFor = new Date(scheduledFor);
 
+    console.log('Creating post with data:', postData);
     const post = await Post.create(postData);
     await post.populate('author', 'name email role');
 
-    res.status(201).json({
+    console.log('Post created successfully:', post);
+    return res.status(201).json({
       success: true,
       message: 'Post created successfully',
       post
     });
   } catch (error) {
     console.error('Create post error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: 'Server error creating post'
+      message: 'Server error creating post',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });

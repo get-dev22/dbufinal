@@ -152,11 +152,14 @@ router.post('/', protect, adminOnly, validateElection, async (req, res) => {
   try {
     const { title, description, startDate, endDate, candidates, electionType, rules, isPublic } = req.body;
 
+    console.log('Received election data:', req.body);
+    console.log('User creating election:', req.user);
     // Validate dates
     const start = new Date(startDate);
     const end = new Date(endDate);
     const now = new Date();
 
+    console.log('Date validation:', { start, end, now });
     if (start < now) {
       return res.status(400).json({
         success: false,
@@ -177,7 +180,7 @@ router.post('/', protect, adminOnly, validateElection, async (req, res) => {
       isActive: true 
     });
 
-    const election = await Election.create({
+    const electionData = {
       title,
       description,
       startDate: start,
@@ -188,10 +191,14 @@ router.post('/', protect, adminOnly, validateElection, async (req, res) => {
       isPublic: isPublic !== false,
       eligibleVoters,
       createdBy: req.user._id || req.user.id
-    });
+    };
+
+    console.log('Creating election with data:', electionData);
+    const election = await Election.create(electionData);
 
     await election.populate('createdBy', 'name email role');
 
+    console.log('Election created successfully:', election);
     return res.status(201).json({ // ADDED RETURN
       success: true,
       message: 'Election created successfully',
@@ -201,7 +208,8 @@ router.post('/', protect, adminOnly, validateElection, async (req, res) => {
     console.error('Create election error:', error);
     return res.status(500).json({ // ADDED RETURN
       success: false,
-      message: 'Server error creating election'
+      message: 'Server error creating election',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });

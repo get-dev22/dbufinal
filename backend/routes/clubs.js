@@ -133,6 +133,8 @@ router.post('/', protect, adminOnly, validateClub, async (req, res) => {
   try {
     const { name, description, category, founded, image, contactEmail, meetingSchedule, requirements } = req.body;
 
+    console.log('Received club data:', req.body);
+    console.log('User creating club:', req.user);
     // Check if club name already exists
     const existingClub = await Club.findOne({ 
       name: { $regex: new RegExp(`^${name}$`, 'i') } 
@@ -144,20 +146,22 @@ router.post('/', protect, adminOnly, validateClub, async (req, res) => {
       });
     }
 
-    const club = await Club.create({
+    const clubData = {
       name,
       description,
       category,
-      founded: founded || new Date().getFullYear(),
-      image,
+      founded: founded || new Date().getFullYear().toString(),
+      image: image || 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=400',
       contactEmail,
       meetingSchedule,
       requirements,
-      status: 'active',
-      createdBy: req.user._id
-    });
+      status: 'active'
+    };
 
-    await club.populate('createdBy', 'name email');
+    console.log('Creating club with data:', clubData);
+    const club = await Club.create(clubData);
+
+    console.log('Club created successfully:', club);
 
     return res.status(201).json({
       success: true,

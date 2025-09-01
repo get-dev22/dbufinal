@@ -170,10 +170,30 @@ class ApiService {
 		const endpoint = queryString ? `/clubs?${queryString}` : "/clubs";
 		try {
 			const response = await this.request(endpoint);
-			return Array.isArray(response) ? response : (response.clubs || response.data || []);
+			console.log('Raw clubs response:', response);
+			
+			// Handle different response structures more robustly
+			if (response.success === false) {
+				throw new Error(response.message || 'Failed to fetch clubs');
+			}
+			
+			let clubsData = [];
+			if (Array.isArray(response)) {
+				clubsData = response;
+			} else if (response.clubs && Array.isArray(response.clubs)) {
+				clubsData = response.clubs;
+			} else if (response.data && Array.isArray(response.data)) {
+				clubsData = response.data;
+			} else if (response.success && response.clubs) {
+				clubsData = response.clubs;
+			} else if (response.success && response.data) {
+				clubsData = response.data;
+			}
+			
+			return clubsData;
 		} catch (error) {
 			console.error('Failed to fetch clubs:', error);
-			return [];
+			throw error;
 		}
 	}
 
@@ -182,10 +202,57 @@ class ApiService {
 	}
 
 	async createClub(clubData) {
-		if (typeof clubData !== "object" || !clubData) {
-			throw new Error("Invalid club data");
+		try {
+			if (typeof clubData !== "object" || !clubData) {
+				throw new Error("Invalid club data");
+			}
+			
+			console.log('Sending club data:', clubData);
+			const response = await this.request("/clubs", {
+				method: "POST",
+				body: clubData,
+			});
+			console.log('Create club API response:', response);
+			return response;
+		} catch (error) {
+			console.error('Create club API error:', error);
+			throw error;
 		}
-		return this.request("/clubs", {
+	}
+@@ .. @@
+	// Election endpoints
+	async getElections(params = {}) {
+		const queryString = new URLSearchParams(params).toString();
+		const endpoint = queryString ? `/elections?${queryString}` : "/elections";
+		try {
+			const response = await this.request(endpoint);
+			console.log('Raw elections response:', response);
+			
+			// Handle different response structures more robustly
+			if (response.success === false) {
+				throw new Error(response.message || 'Failed to fetch elections');
+			}
+			
+			let electionsData = [];
+			if (Array.isArray(response)) {
+				electionsData = response;
+			} else if (response.elections && Array.isArray(response.elections)) {
+				electionsData = response.elections;
+			} else if (response.data && Array.isArray(response.data)) {
+				electionsData = response.data;
+			} else if (response.success && response.elections) {
+				electionsData = response.elections;
+			} else if (response.success && response.data) {
+				electionsData = response.data;
+			}
+			
+			return electionsData;
+		} catch (error) {
+			console.error('Failed to fetch elections:', error);
+			throw error;
+		}
+	}
+@@ .. @@
 			method: "POST",
 			body: clubData,
 		});
@@ -244,10 +311,30 @@ class ApiService {
 		const endpoint = queryString ? `/posts?${queryString}` : "/posts";
 		try {
 			const response = await this.request(endpoint);
-			return Array.isArray(response) ? response : (response.posts || response.data || []);
+			console.log('Raw posts response:', response);
+			
+			// Handle different response structures more robustly
+			if (response.success === false) {
+				throw new Error(response.message || 'Failed to fetch posts');
+			}
+			
+			let postsData = [];
+			if (Array.isArray(response)) {
+				postsData = response;
+			} else if (response.posts && Array.isArray(response.posts)) {
+				postsData = response.posts;
+			} else if (response.data && Array.isArray(response.data)) {
+				postsData = response.data;
+			} else if (response.success && response.posts) {
+				postsData = response.posts;
+			} else if (response.success && response.data) {
+				postsData = response.data;
+			}
+			
+			return postsData;
 		} catch (error) {
 			console.error('Failed to fetch posts:', error);
-			return [];
+			throw error;
 		}
 	}
 
@@ -316,7 +403,34 @@ class ApiService {
 	}
 
 	async createElection(electionData) {
-		return this.request("/elections", {
+		try {
+			console.log('Sending election data:', electionData);
+			const response = await this.request("/elections", {
+				method: "POST",
+				body: electionData,
+			});
+			console.log('Create election API response:', response);
+			return response;
+		} catch (error) {
+			console.error('Create election API error:', error);
+			throw error;
+		}
+	}
+@@ .. @@
+	async createPost(postData) {
+		try {
+			console.log('Sending post data:', postData);
+			const response = await this.request("/posts", {
+				method: "POST",
+				body: postData,
+			});
+			console.log('Create post API response:', response);
+			return response;
+		} catch (error) {
+			console.error('Create post API error:', error);
+			throw error;
+		}
+	}
 			method: "POST",
 			body: electionData,
 		});
