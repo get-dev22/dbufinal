@@ -462,6 +462,8 @@ router.get('/stats/overview', protect, adminOnly, async (req, res) => {
     });
 
     return res.json({
+    }
+    )
     const popularPosts = await Post.find({ status: 'published' })
       .select('title views')
       .sort({ views: -1 })
