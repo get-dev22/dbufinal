@@ -47,7 +47,7 @@ router.get('/', optionalAuth, async (req, res) => {
 
     const total = await Post.countDocuments(query);
 
-    return res.json({
+    res.json({
       success: true,
       count: posts.length,
       total,
@@ -58,7 +58,7 @@ router.get('/', optionalAuth, async (req, res) => {
     });
   } catch (error) {
     console.error('Get posts error:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: 'Server error fetching posts'
     });
@@ -94,13 +94,13 @@ router.get('/:id', optionalAuth, async (req, res) => {
     // Increment views
     await post.incrementViews();
 
-    res.json({
+    return res.json({
       success: true,
       post
     });
   } catch (error) {
     console.error('Get post error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error fetching post'
     });
@@ -166,14 +166,14 @@ router.post('/', protect, adminOnly, validatePost, async (req, res) => {
     await post.populate('author', 'name email role');
 
     console.log('Post created successfully:', post);
-    return res.status(201).json({
+    res.status(201).json({
       success: true,
       message: 'Post created successfully',
       post
     });
   } catch (error) {
     console.error('Create post error:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: 'Server error creating post',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -236,14 +236,14 @@ router.put('/:id', protect, adminOnly, async (req, res) => {
     await post.save();
     await post.populate('author', 'name email role');
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Post updated successfully',
       post
     });
   } catch (error) {
     console.error('Update post error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error updating post'
     });
@@ -265,13 +265,13 @@ router.delete('/:id', protect, adminOnly, async (req, res) => {
 
     await Post.findByIdAndDelete(req.params.id);
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Post deleted successfully'
     });
   } catch (error) {
     console.error('Delete post error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error deleting post'
     });
@@ -303,7 +303,7 @@ router.post('/:id/like', protect, async (req, res) => {
 
     await post.save();
 
-    res.json({
+    return res.json({
       success: true,
       message: hasLiked ? 'Post unliked' : 'Post liked',
       liked: !hasLiked,
@@ -311,7 +311,7 @@ router.post('/:id/like', protect, async (req, res) => {
     });
   } catch (error) {
     console.error('Like post error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error liking post'
     });
@@ -351,14 +351,14 @@ router.post('/:id/comments', protect, async (req, res) => {
 
     const newComment = post.comments[post.comments.length - 1];
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Comment added successfully',
       comment: newComment
     });
   } catch (error) {
     console.error('Add comment error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error adding comment'
     });
@@ -405,14 +405,14 @@ router.post('/:id/register', protect, async (req, res) => {
     post.attendees.push(req.user.id);
     await post.save();
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Successfully registered for event',
       attendeeCount: post.attendees.length
     });
   } catch (error) {
     console.error('Register for event error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error registering for event'
     });
@@ -461,13 +461,13 @@ router.get('/stats/overview', protect, adminOnly, async (req, res) => {
       createdAt: { $gte: thirtyDaysAgo }
     });
 
-    // Most popular posts
+    return res.json({
     const popularPosts = await Post.find({ status: 'published' })
       .select('title views')
       .sort({ views: -1 })
       .limit(5);
 
-    res.json({
+    return res.json({
       success: true,
       stats: {
         totalPosts,
@@ -485,7 +485,7 @@ router.get('/stats/overview', protect, adminOnly, async (req, res) => {
     });
   } catch (error) {
     console.error('Get post stats error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error fetching post statistics'
     });

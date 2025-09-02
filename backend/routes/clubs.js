@@ -65,7 +65,7 @@ router.get('/', optionalAuth, async (req, res) => {
       createdAt: club.createdAt
     }));
 
-    return res.json({
+    res.json({
       success: true,
       count: transformedClubs.length,
       total,
@@ -76,7 +76,7 @@ router.get('/', optionalAuth, async (req, res) => {
     });
   } catch (error) {
     console.error('Get clubs error:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: 'Server error fetching clubs',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -112,13 +112,13 @@ router.get('/:id', optionalAuth, async (req, res) => {
       });
     }
 
-    return res.json({
+    res.json({
       success: true,
       club
     });
   } catch (error) {
     console.error('Get club error:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: 'Server error fetching club',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -163,14 +163,14 @@ router.post('/', protect, adminOnly, validateClub, async (req, res) => {
 
     console.log('Club created successfully:', club);
 
-    return res.status(201).json({
+    res.status(201).json({
       success: true,
       message: 'Club created successfully',
       club
     });
   } catch (error) {
     console.error('Create club error:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: 'Server error creating club',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -219,14 +219,14 @@ router.put('/:id', protect, adminOnly, async (req, res) => {
 
     await club.save();
 
-    return res.json({
+    res.json({
       success: true,
       message: 'Club updated successfully',
       club
     });
   } catch (error) {
     console.error('Update club error:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: 'Server error updating club',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -255,13 +255,13 @@ router.delete('/:id', protect, adminOnly, async (req, res) => {
 
     await Club.findByIdAndDelete(req.params.id);
 
-    return res.json({
+    res.json({
       success: true,
       message: 'Club deleted successfully'
     });
   } catch (error) {
     console.error('Delete club error:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: 'Server error deleting club',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -330,13 +330,13 @@ router.post('/:id/join', protect, async (req, res) => {
 
     await club.save();
 
-    return res.json({
+    res.json({
       success: true,
       message: 'Join request submitted successfully. Waiting for admin approval.'
     });
   } catch (error) {
     console.error('Join club error:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: 'Server error joining club',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -374,13 +374,13 @@ router.patch('/:id/members/:memberId/approve', protect, adminOnly, async (req, r
       $addToSet: { joinedClubs: club._id }
     });
 
-    return res.json({
+    res.json({
       success: true,
       message: 'Member approved successfully'
     });
   } catch (error) {
     console.error('Approve member error:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: 'Server error approving member'
     });
@@ -411,13 +411,13 @@ router.patch('/:id/members/:memberId/reject', protect, adminOnly, async (req, re
     member.status = 'rejected';
     await club.save();
 
-    return res.json({
+    res.json({
       success: true,
       message: 'Member rejected successfully'
     });
   } catch (error) {
     console.error('Reject member error:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: 'Server error rejecting member'
     });
@@ -441,14 +441,14 @@ router.get('/:id/join-requests', protect, adminOnly, async (req, res) => {
 
     const pendingRequests = club.members.filter(member => member.status === 'pending');
 
-    return res.json({
+    res.json({
       success: true,
       count: pendingRequests.length,
       requests: pendingRequests
     });
   } catch (error) {
     console.error('Get join requests error:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: 'Server error fetching join requests'
     });
@@ -489,13 +489,13 @@ router.post('/:id/leave', protect, async (req, res) => {
       $pull: { joinedClubs: club._id }
     });
 
-    return res.json({
+    res.json({
       success: true,
       message: 'Successfully left the club'
     });
   } catch (error) {
     console.error('Leave club error:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: 'Server error leaving club'
     });
@@ -532,7 +532,7 @@ router.get('/stats/overview', protect, adminOnly, async (req, res) => {
       { $limit: 5 }
     ]);
 
-    return res.json({
+    res.json({
       success: true,
       stats: {
         totalClubs,
@@ -547,7 +547,7 @@ router.get('/stats/overview', protect, adminOnly, async (req, res) => {
     });
   } catch (error) {
     console.error('Get club stats error:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: 'Server error fetching club statistics'
     });

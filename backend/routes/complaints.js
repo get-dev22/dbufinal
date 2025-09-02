@@ -63,7 +63,7 @@ router.get('/', protect, async (req, res) => {
     });
   } catch (error) {
     console.error('Get complaints error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error fetching complaints'
     });
@@ -101,7 +101,7 @@ router.get('/:id', protect, async (req, res) => {
     });
   } catch (error) {
     console.error('Get complaint error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error fetching complaint'
     });
@@ -126,14 +126,14 @@ router.post('/', protect, validateComplaint, async (req, res) => {
 
     await complaint.populate('submittedBy', 'name email studentId');
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: 'Complaint submitted successfully',
       complaint
     });
   } catch (error) {
     console.error('Create complaint error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error creating complaint'
     });
@@ -178,14 +178,14 @@ router.patch('/:id/status', protect, adminOnly, async (req, res) => {
     await complaint.populate('submittedBy', 'name email');
     await complaint.populate('assignedTo', 'name email role');
 
-    return res.json({
+    res.json({
       success: true,
       message: 'Complaint status updated successfully',
       complaint
     });
   } catch (error) {
     console.error('Update complaint status error:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: 'Server error updating complaint status'
     });
@@ -239,14 +239,14 @@ router.post('/:id/responses', protect, adminOnly, async (req, res) => {
     await complaint.save();
     await complaint.populate('responses.authorId', 'name role');
 
-    return res.json({
+    res.json({
       success: true,
       message: 'Response added successfully',
       response: complaint.responses[complaint.responses.length - 1]
     });
   } catch (error) {
     console.error('Add response error:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: 'Server error adding response'
     });
@@ -285,14 +285,14 @@ router.patch('/:id/assign', protect, adminOnly, async (req, res) => {
     await complaint.save();
     await complaint.populate('assignedTo', 'name email role');
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Complaint assigned successfully',
       complaint
     });
   } catch (error) {
     console.error('Assign complaint error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error assigning complaint'
     });
@@ -342,7 +342,7 @@ router.get('/stats/overview', protect, adminOnly, async (req, res) => {
       avgResolutionTime = Math.round(totalTime / resolvedComplaintsWithTime.length / (1000 * 60 * 60 * 24)); // in days
     }
 
-    res.json({
+    return res.json({
       success: true,
       stats: {
         totalComplaints,
@@ -357,9 +357,37 @@ router.get('/stats/overview', protect, adminOnly, async (req, res) => {
     });
   } catch (error) {
     console.error('Get complaint stats error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error fetching complaint statistics'
+    });
+  }
+});
+
+// @desc    Delete complaint (Admin only)
+// @route   DELETE /api/complaints/:id
+// @access  Private/Admin
+router.delete('/:id', protect, adminOnly, async (req, res) => {
+  try {
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) {
+      return res.status(404).json({
+        success: false,
+        message: 'Complaint not found'
+      });
+    }
+
+    await Complaint.findByIdAndDelete(req.params.id);
+
+    return res.json({
+      success: true,
+      message: 'Complaint deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete complaint error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error deleting complaint'
     });
   }
 });

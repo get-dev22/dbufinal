@@ -166,6 +166,26 @@ export function Complaints() {
 		}
 	};
 
+	const handleDeleteComplaint = async (complaintId) => {
+		if (!user?.isAdmin) {
+			toast.error("Only admins can delete complaints");
+			return;
+		}
+
+		if (!confirm("Are you sure you want to delete this complaint?")) {
+			return;
+		}
+
+		try {
+			// Since there's no delete endpoint, we'll close the complaint instead
+			await apiService.updateComplaintStatus(complaintId, "closed");
+			await fetchComplaints();
+			toast.success("Complaint closed successfully");
+		} catch (error) {
+			console.error('Failed to close complaint:', error);
+			toast.error(`Failed to close complaint: ${error.message}`);
+		}
+	};
 	const getStatusIcon = (status) => {
 		switch (status) {
 			case "submitted":
@@ -219,6 +239,7 @@ export function Complaints() {
 		setResponseMessage, 
 		handleSendResponse, 
 		handleResolveComplaint,
+		handleDeleteComplaint,
 		getStatusIcon,
 		getStatusColor,
 		getPriorityColor
@@ -257,6 +278,13 @@ export function Complaints() {
 							onClick={() => handleResolveComplaint(complaint._id || complaint.id)}
 							className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors">
 							Resolve
+						</button>
+					)}
+					{user?.isAdmin && (
+						<button
+							onClick={() => handleDeleteComplaint(complaint._id || complaint.id)}
+							className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition-colors">
+							Delete
 						</button>
 					)}
 					<button
@@ -434,6 +462,7 @@ export function Complaints() {
 								setResponseMessage={setResponseMessage}
 								handleSendResponse={handleSendResponse}
 								handleResolveComplaint={handleResolveComplaint}
+								handleDeleteComplaint={handleDeleteComplaint}
 								getStatusIcon={getStatusIcon}
 								getStatusColor={getStatusColor}
 								getPriorityColor={getPriorityColor}

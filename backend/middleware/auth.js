@@ -183,11 +183,12 @@ const optionalAuth = async (req, res, next) => {
 			);
 			req.user = await User.findById(decoded.id).select("-password");
 		} catch (error) {
-			// Token is invalid, but we continue without user
-			req.user = null;
+			// Token is invalid, continue without user for optional auth
+			console.log('Optional auth token verification failed:', error.message);
 		}
 	}
 
+	req.user = req.user || null;
 	next();
 };
 

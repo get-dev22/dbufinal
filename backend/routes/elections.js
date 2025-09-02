@@ -132,13 +132,13 @@ router.get('/:id', optionalAuth, async (req, res) => {
       }));
     }
 
-    return res.json({ // ADDED RETURN
+    res.json({
       success: true,
       election
     });
   } catch (error) {
     console.error('Get election error:', error);
-    return res.status(500).json({ // ADDED RETURN
+    res.status(500).json({
       success: false,
       message: 'Server error fetching election'
     });
@@ -199,14 +199,14 @@ router.post('/', protect, adminOnly, validateElection, async (req, res) => {
     await election.populate('createdBy', 'name email role');
 
     console.log('Election created successfully:', election);
-    return res.status(201).json({ // ADDED RETURN
+    res.status(201).json({
       success: true,
       message: 'Election created successfully',
       election
     });
   } catch (error) {
     console.error('Create election error:', error);
-    return res.status(500).json({ // ADDED RETURN
+    res.status(500).json({
       success: false,
       message: 'Server error creating election',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -270,14 +270,14 @@ router.put('/:id', protect, adminOnly, async (req, res) => {
 
     await election.save();
 
-    return res.json({ // ADDED RETURN
+    res.json({
       success: true,
       message: 'Election updated successfully',
       election
     });
   } catch (error) {
     console.error('Update election error:', error);
-    return res.status(500).json({ // ADDED RETURN
+    res.status(500).json({
       success: false,
       message: 'Server error updating election'
     });
@@ -307,13 +307,13 @@ router.delete('/:id', protect, adminOnly, async (req, res) => {
 
     await Election.findByIdAndDelete(req.params.id);
 
-    return res.json({ // ADDED RETURN
+    res.json({
       success: true,
       message: 'Election deleted successfully'
     });
   } catch (error) {
     console.error('Delete election error:', error);
-    return res.status(500).json({ // ADDED RETURN
+    res.status(500).json({
       success: false,
       message: 'Server error deleting election'
     });
@@ -388,13 +388,13 @@ router.post('/:id/vote', protect, async (req, res) => {
       $addToSet: { votedElections: election._id }
     });
 
-    return res.json({ // ADDED RETURN
+    res.json({
       success: true,
       message: 'Vote cast successfully'
     });
   } catch (error) {
     console.error('Vote error:', error);
-    return res.status(500).json({ // ADDED RETURN
+    res.status(500).json({
       success: false,
       message: 'Server error casting vote'
     });
@@ -425,14 +425,14 @@ router.post('/:id/announce', protect, adminOnly, async (req, res) => {
     election.publishedAt = new Date();
     await election.save();
 
-    return res.json({ // ADDED RETURN
+    res.json({
       success: true,
       message: 'Election results announced successfully',
       winner: election.getWinner()
     });
   } catch (error) {
     console.error('Announce results error:', error);
-    return res.status(500).json({ // ADDED RETURN
+    res.status(500).json({
       success: false,
       message: 'Server error announcing results'
     });
@@ -468,7 +468,7 @@ router.get('/stats/overview', protect, adminOnly, async (req, res) => {
       createdAt: { $gte: ninetyDaysAgo }
     });
 
-    return res.json({ // ADDED RETURN
+    res.json({
       success: true,
       stats: {
         totalElections,
@@ -483,7 +483,7 @@ router.get('/stats/overview', protect, adminOnly, async (req, res) => {
     });
   } catch (error) {
     console.error('Get election stats error:', error);
-    return res.status(500).json({ // ADDED RETURN
+    res.status(500).json({
       success: false,
       message: 'Server error fetching election statistics'
     });

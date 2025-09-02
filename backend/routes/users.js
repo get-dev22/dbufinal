@@ -341,8 +341,7 @@ router.get('/:id', protect, adminOnly, async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
       .select('-password')
-      .populate('joinedClubs', 'name category')
-      .populate('votedElections', 'title'); // Added election population
+      .lean(); // Use lean for better performance
 
     if (!user) {
       return res.status(404).json({

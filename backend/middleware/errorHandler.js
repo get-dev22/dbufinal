@@ -59,11 +59,10 @@ const errorHandler = (err, req, res, next) => {
   // Handle headers already sent error
   if (res.headersSent) {
     console.error('Headers already sent, cannot send error response');
-    return next(err);
+    return;
   }
 
-  // ADDED RETURN STATEMENT - This is crucial!
-  return res.status(error.statusCode || 500).json({
+  res.status(error.statusCode || 500).json({
     success: false,
     message: error.message || 'Server Error',
     ...(process.env.NODE_ENV === 'development' && { 

@@ -419,9 +419,7 @@ router.post("/reset-admin-password", async (req, res) => {
 // @access  Private
 router.get("/profile", protect, async (req, res) => {
 	try {
-		const user = await User.findById(req.user.id)
-			.populate("joinedClubs", "name category")
-			.select("-password");
+		const user = await User.findById(req.user.id).select("-password");
 
 		return res.json({
 			success: true,
